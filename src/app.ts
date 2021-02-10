@@ -1,3 +1,48 @@
+// validation
+interface Validatable {
+    value: number | string,
+    required?: boolean,
+    minLength?: number,
+    maxLength?: number,
+    min?: number,
+    max?: number
+}
+
+function validate(obj: Validatable) {
+    let isValid = true;
+    if (obj.required) {
+        isValid = isValid && obj.value.toString().trim().length !== 0;
+    }
+    if (obj.minLength !== undefined) {
+        if (typeof obj.value === 'number') {
+            isValid = isValid && obj.minLength < obj.value
+        }
+        if (typeof obj.value === 'string') {
+            isValid = isValid && obj.minLength < obj.value.length;
+        }
+    }
+    if (obj.maxLength !== undefined) {
+        if (typeof obj.value === 'number') {
+            isValid = isValid && obj.maxLength > obj.value;
+        }
+        if (typeof obj.value === 'string') {
+            isValid = isValid && obj.maxLength > obj.value.length;
+        }
+    }
+
+    if (obj.min !== undefined) {
+        if (typeof obj.value === 'number') {
+            isValid = isValid && obj.min < obj.value;
+        }
+    }
+    if (obj.max !== undefined) {
+        if (typeof obj.value === 'number') {
+            isValid = isValid && obj.max < obj.value;
+        }
+    }
+    return isValid;
+}
+
 function autobind(
     _: any,
     _2: string,
@@ -20,7 +65,7 @@ class ProjectInput {
     element: HTMLElement;
     titleInputElement: HTMLInputElement;
     descriptionInputElement: HTMLInputElement;
-    mandyInputElement: HTMLInputElement;
+    mandayInputElement: HTMLInputElement;
 
     constructor() {
         this.templateEl = document.querySelector('#project-input')! as HTMLTemplateElement;
@@ -33,16 +78,44 @@ class ProjectInput {
         this.element.id = 'user-input';
         this.titleInputElement = this.element.querySelector('#title')! as HTMLInputElement
         this.descriptionInputElement = this.element.querySelector('#description')! as HTMLInputElement
-        this.mandyInputElement = this.element.querySelector('#mandy')! as HTMLInputElement
+        this.mandayInputElement = this.element.querySelector('#manday')! as HTMLInputElement
 
         this.configure();
         this.attach();
     }
 
+    private gatherInputs(): [string, string, number] | void {
+        const title = this.titleInputElement.value;
+        const desc = this.descriptionInputElement.value;
+        const man = this.mandayInputElement.value;
+        if (validate({value: title, required: true, minLength: 5}) &&
+            validate({value: desc, required: true, minLength: 5}) &&
+            validate({value: man, required: true, min: 0, max: 10})
+        ) {
+            alert('入力値が正しくありません');
+            return;
+        }
+        return [title, desc, +man]
+    }
+
+
+    private clearInput() {
+        this.titleInputElement.value = '';
+        this.descriptionInputElement.value = '';
+        this.mandayInputElement.value = '';
+    }
+
+
     @autobind
     private submitFunc(event: Event) {
         event.preventDefault();
-        console.log(this.titleInputElement.value)
+
+        const userInput = this.gatherInputs()
+        if (Array.isArray(userInput)) {
+            const [title, desc, man] = userInput;
+            this.clearInput();
+            console.log(title, desc, man)
+        }
     }
 
     private configure() {
