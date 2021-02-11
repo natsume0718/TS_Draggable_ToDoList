@@ -108,7 +108,6 @@ function autobind(
 }
 
 
-
 class ProjectList {
     templateElement: HTMLTemplateElement;
     hostElement: HTMLDivElement;
@@ -125,7 +124,13 @@ class ProjectList {
         this.element.id = `${this.type}-projects`;
 
         projectState.addListener((projects: Project[]) => {
-            this.assignedProjects = projects;
+            const relevantProject = projects.filter(prj => {
+                if (this.type === 'active') {
+                    return prj.status === ProjectStatus.Active;
+                }
+                return prj.status === ProjectStatus.Finished;
+            })
+            this.assignedProjects = relevantProject;
             this.renderProjects();
         });
         this.attach();
@@ -134,6 +139,7 @@ class ProjectList {
 
     private renderProjects() {
         const li = document.getElementById(`${this.type}-projects`) as HTMLUListElement;
+        li.innerHTML = '';
         for (const prj of this.assignedProjects) {
             const item = document.createElement('li');
             item.textContent = prj.title;
