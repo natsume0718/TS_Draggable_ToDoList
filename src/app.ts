@@ -88,8 +88,8 @@ class ProjectInput {
         const title = this.titleInputElement.value;
         const desc = this.descriptionInputElement.value;
         const man = this.mandayInputElement.value;
-        if (!validate({value: title, required: true, minLength: 5}) &&
-            !validate({value: desc, required: true, minLength: 5}) &&
+        if (!validate({value: title, required: true, minLength: 5}) ||
+            !validate({value: desc, required: true, minLength: 5}) ||
             !validate({value: man, required: true, min: 0, max: 10})
         ) {
             alert('入力値が正しくありません');
