@@ -107,6 +107,28 @@ function autobind(
     return adjDescriptor;
 }
 
+abstract class Component<T extends HTMLElement, U extends HTMLElement> {
+    templateElement: HTMLTemplateElement;
+    hostElement: T;
+    element: U;
+
+    constructor(templateId: string, hostElementId: string, insertAtStart: boolean, newElementId?: string) {
+        this.templateElement = document.getElementById(templateId)! as HTMLTemplateElement;
+        this.hostElement = document.getElementById(hostElementId)! as T;
+        // template内を複製
+        const importedNode = document.importNode(this.templateElement.content, true);
+        // 最初の子要素で初期化
+        this.element = importedNode.firstElementChild as U;
+        if (newElementId !== undefined) {
+            this.element.id = newElementId;
+        }
+        this.attach(insertAtStart);
+    }
+
+    private attach(insertToStart: boolean) {
+        this.hostElement.insertAdjacentElement(insertToStart ? 'afterbegin' : 'beforeend', this.element);
+    }
+}
 
 class ProjectList {
     templateElement: HTMLTemplateElement;
