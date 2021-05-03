@@ -2,7 +2,16 @@ enum ProjectStatus {
     Active, Finished
 }
 
-type Listener = (items: Project[]) => void;
+class State<T> {
+    protected listeners: Listener<T>[] = [];
+
+    addListener(listenerFn: Listener<T>) {
+        this.listeners.push(listenerFn);
+    }
+
+}
+
+type Listener<T> = (items: T[]) => void;
 
 class Project {
     constructor(
@@ -16,25 +25,22 @@ class Project {
     }
 }
 
+
 // state manager
-class State {
-    private listeners: Listener[] = [];
+class ProjectState extends State<Project> {
     private projects: Project[] = [];
-    private static instance: State;
+    private static instance: ProjectState;
 
     private constructor() {
+        super();
     }
 
     static getInstance() {
         if (this.instance) {
             return this.instance;
         }
-        this.instance = new State();
+        this.instance = new ProjectState();
         return this.instance;
-    }
-
-    addListener(listenerFn: Listener) {
-        this.listeners.push(listenerFn);
     }
 
     addProject(title: string, description: string, manday: number) {
@@ -45,7 +51,7 @@ class State {
     }
 }
 
-const projectState = State.getInstance();
+const projectState = ProjectState.getInstance();
 
 // validation
 interface Validatable {
@@ -128,23 +134,31 @@ abstract class Component<T extends HTMLElement, U extends HTMLElement> {
     private attach(insertToStart: boolean) {
         this.hostElement.insertAdjacentElement(insertToStart ? 'afterbegin' : 'beforeend', this.element);
     }
+
+    abstract configure(): void;
+    abstract renderContent(): void;
 }
 
-class ProjectList {
-    templateElement: HTMLTemplateElement;
-    hostElement: HTMLDivElement;
-    element: HTMLElement;
+class ProjectList extends Component<HTMLDivElement, HTMLElement> {
     assignedProjects: any[] = []
 
     constructor(private type: 'active' | 'finished') {
-        this.templateElement = document.getElementById('project-list')! as HTMLTemplateElement;
-        this.hostElement = document.getElementById('app')! as HTMLDivElement;
+        super('project-list', 'app', false, `${type}-projects`);
         this.assignedProjects = [];
 
-        const importedNode = document.importNode(this.templateElement.content, true);
-        this.element = importedNode.firstElementChild as HTMLElement;
-        this.element.id = `${this.type}-projects`;
+        this.configure();
+        this.renderContent();
+    }
 
+    renderContent() {
+        const listId = `${this.type}-projects-list`;
+        this.element.querySelector('ul')!.id = listId;
+        this.element.querySelector('h2')!.textContent =
+            this.type === 'active' ? '実行中プロジェクト' : '完了プロジェクト';
+    }
+
+
+    configure() {
         projectState.addListener((projects: Project[]) => {
             const relevantProject = projects.filter(prj => {
                 if (this.type === 'active') {
@@ -155,8 +169,6 @@ class ProjectList {
             this.assignedProjects = relevantProject;
             this.renderProjects();
         });
-        this.attach();
-        this.renderContent();
     }
 
     private renderProjects() {
@@ -168,51 +180,39 @@ class ProjectList {
             li.appendChild(item);
         }
     }
-
-    private renderContent() {
-        this.element.querySelector('ul')!.id = `${this.type}-projects-list`;
-        this.element.querySelector('h2')!.textContent =
-            this.type === 'active' ? '実行中プロジェクト' : '完了プロジェクト';
-    }
-
-    private attach() {
-        this.hostElement.insertAdjacentElement('beforeend', this.element);
-    }
 }
 
 
-class ProjectInput {
-    templateEl: HTMLTemplateElement;
-    hostEl: HTMLElement;
-    element: HTMLElement;
+class ProjectInput extends Component<HTMLDivElement, HTMLFormElement> {
     titleInputElement: HTMLInputElement;
     descriptionInputElement: HTMLInputElement;
     mandayInputElement: HTMLInputElement;
 
     constructor() {
-        this.templateEl = document.querySelector('#project-input')! as HTMLTemplateElement;
-        this.hostEl = document.querySelector('#app')! as HTMLElement;
+        super('project-input', 'app', true, 'user-input');
 
-        // template内を複製
-        const importedNode = document.importNode(this.templateEl.content, true);
-        // 最初の子要素で初期化
-        this.element = importedNode.firstElementChild as HTMLElement;
-        this.element.id = 'user-input';
         this.titleInputElement = this.element.querySelector('#title')! as HTMLInputElement
         this.descriptionInputElement = this.element.querySelector('#description')! as HTMLInputElement
         this.mandayInputElement = this.element.querySelector('#manday')! as HTMLInputElement
 
         this.configure();
-        this.attach();
+    }
+
+    configure() {
+        this.element.addEventListener('submit', this.submitFunc)
+    }
+
+    renderContent() {
+
     }
 
     private gatherInputs(): [string, string, number] | void {
         const title = this.titleInputElement.value;
         const desc = this.descriptionInputElement.value;
         const man = this.mandayInputElement.value;
-        if (!validate({value: title, required: true, minLength: 2}) ||
-            !validate({value: desc, required: true, minLength: 2}) ||
-            !validate({value: man, required: true, min: 0, max: 100})
+        if (!validate({ value: title, required: true, minLength: 2 }) ||
+            !validate({ value: desc, required: true, minLength: 2 }) ||
+            !validate({ value: man, required: true, min: 0, max: 100 })
         ) {
             alert('入力値が正しくありません');
             return;
@@ -240,13 +240,6 @@ class ProjectInput {
         }
     }
 
-    private configure() {
-        this.element.addEventListener('submit', this.submitFunc)
-    }
-
-    private attach() {
-        this.hostEl.insertAdjacentElement('beforebegin', this.element);
-    }
 }
 
 new ProjectInput();
