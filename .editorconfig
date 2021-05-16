@@ -11,5 +11,5 @@ trim_trailing_whitespace = true
 [*.md]
 trim_trailing_whitespace = false
 
-[*.{html,js,ts,yml,yaml}]
+[*.{html,js,ts,yml,yaml,json}]
 indent_size = 2
