@@ -1,6 +1,7 @@
 const path = require('path');
 
 module.exports = {
+  mode: 'development',
   entry: './src/app.ts',
   output: {
     filename: '[name]-[hash].js',
